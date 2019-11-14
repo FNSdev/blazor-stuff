@@ -1,0 +1,61 @@
+@page "/account/register"
+@using Microsoft.AspNetCore.Identity
+@using hephaestus.Models
+@using hephaestus.Forms.Account
+@inject UserManager<User> UserManager
+@inject NavigationManager NavigationManager
+
+
+<h1>Create New Account</h1>
+
+<h2>Please, fill the form</h2>
+
+<EditForm Model="@registerForm" OnValidSubmit="@HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="form-group">
+        <label for="username">UserName</label>
+        <InputText class="form-control" id="inputUserName" placeholder="Enter UserName" @bind-Value="registerForm.UserName" />
+    </div>
+    <div class="form-group">
+        <label for="email">Email</label>
+        <InputText class="form-control" id="inputEmail" placeholder="Enter Email" @bind-Value="registerForm.Email" />
+    </div>
+    <div class="form-group">
+        <label for="password">Password</label>
+        <InputText type="password" class="form-control" id="inputPassword" placeholder="Enter Password" @bind-Value="registerForm.Password" />
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+
+<div class="mt-3">
+    @foreach (var error in errors)
+    {
+        <p>@error.Description</p>
+    }
+</div>
+
+@code {
+    private RegisterForm registerForm = new RegisterForm();
+    private List<IdentityError> errors = new List<IdentityError>();
+
+    private async Task HandleValidSubmit()
+    {
+        var user = new User {
+            UserName=registerForm.UserName,
+            Email=registerForm.Email,
+        };
+
+        var result = await UserManager.CreateAsync(user, registerForm.Password);
+
+        if (result.Succeeded)
+        {
+            NavigationManager.NavigateTo("account/login");
+        }
+        else
+        {
+            errors.Clear();
+            errors.AddRange(result.Errors);
+        }
+    }
+}

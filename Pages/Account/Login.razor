@@ -1,0 +1,65 @@
+@page "/account/login"
+
+@using Microsoft.AspNetCore.Identity
+@using hephaestus.Models
+@using hephaestus.Forms.Account
+@using hephaestus.Services
+@using System.IdentityModel.Tokens.Jwt
+@using System.Security.Claims
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+@inject SignInManager<User> SignInManager
+@inject UserManager<User> UserManager
+@inject AuthStateService AuthStateService
+@inject IJWTService JWTService
+
+
+<h1>Login</h1>
+
+<EditForm Model="@loginForm" OnValidSubmit="@HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="form-group">
+        <label for="username">UserName</label>
+        <InputText class="form-control" id="inputUserName" placeholder="Enter UserName" @bind-Value="loginForm.UserName" />
+    </div>
+    <div class="form-group">
+        <label for="password">Password</label>
+        <InputText type="password" class="form-control" id="inputPassword" placeholder="Enter Password" @bind-Value="loginForm.Password" />
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+
+<div class="mt-3">
+    <p>@errorMessage</p>
+</div>
+
+@code {
+    private LoginForm loginForm = new LoginForm();
+    private string errorMessage = null;
+
+    private async Task HandleValidSubmit()
+    {
+        var user = await UserManager.FindByNameAsync(loginForm.UserName);
+        if(user != null)
+        {
+            var correct = await UserManager.CheckPasswordAsync(user, loginForm.Password);
+            if(correct)
+            {
+                var token = await JWTService.GenerateJSONWebToken(user);
+                await localStorage.SetItemAsync("token", token);
+                var identity = new ClaimsIdentity(await JWTService.GetClaims(user), "Base Authentication");
+                var principal = new ClaimsPrincipal(identity);
+                AuthStateService.SetAuthenticationState(Task.FromResult(new AuthenticationState(principal)));
+                AuthStateService.NotifyStateChanged();
+            }
+            else
+            {
+                errorMessage = "Password is incorrect!";
+            }
+        }
+        else
+        {
+            errorMessage = "No user with such username!";
+        }
+    }
+}
