@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.IdentityModel.Tokens.Jwt;  
@@ -83,7 +84,13 @@ namespace hephaestus
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.AddBlazoredLocalStorage();
-        
+
+            services.AddScoped<HttpClient>();
+            services.AddScoped<GithubAPIClient>();
+            services.AddScoped<GithubService>();
+
+            services.AddScoped<ToastService>();
+
             services.AddScoped<IJWTService, JWTService>();
             services.AddScoped<AuthStateService>();
             services.AddScoped<AuthenticationStateProvider, AuthStateService>(provider => provider.GetRequiredService<AuthStateService>());   

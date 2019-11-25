@@ -4,6 +4,7 @@
 @using hephaestus.Forms.Account
 @inject UserManager<User> UserManager
 @inject NavigationManager NavigationManager
+@inject DatabaseContext DatabaseContext
 
 
 <h1>Create New Account</h1>
@@ -50,6 +51,11 @@
 
         if (result.Succeeded)
         {
+            var githubUser = new GithubUser();
+            githubUser.User = user;
+            await DatabaseContext.GithubUsers.AddAsync(githubUser);
+            await DatabaseContext.SaveChangesAsync();
+            
             NavigationManager.NavigateTo("account/login");
         }
         else

@@ -1,0 +1,40 @@
+.toast {
+    display: none;
+    padding: 1.5rem;
+    color: #fff;
+    z-index: 1000000000;
+    position: absolute;
+    height: 100px;
+    width: 400px;
+    position: absolute;
+    left: 50%;
+    margin-left: -180px;
+    top: 80%;
+    margin-top: -50px;
+    border-radius: 1.5rem;
+}
+
+.toast-icon {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 1rem;
+    font-size: 2.5rem;
+}
+
+.toast-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding-left: 1rem;
+}
+
+.toast-body p {
+    margin-bottom: 0;
+}
+
+.toast-visible {
+    display: flex;
+    flex-direction: row;
+    opacity: 1;
+}

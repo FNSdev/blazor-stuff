@@ -4,13 +4,13 @@
 @using hephaestus.Models
 @using hephaestus.Forms.Account
 @using hephaestus.Services
-@using System.IdentityModel.Tokens.Jwt
 @using System.Security.Claims
 @inject Blazored.LocalStorage.ILocalStorageService localStorage
 @inject SignInManager<User> SignInManager
 @inject UserManager<User> UserManager
 @inject AuthStateService AuthStateService
 @inject IJWTService JWTService
+@inject NavigationManager NavigationManager
 
 
 <h1>Login</h1>
@@ -47,10 +47,13 @@
             {
                 var token = await JWTService.GenerateJSONWebToken(user);
                 await localStorage.SetItemAsync("token", token);
+                
                 var identity = new ClaimsIdentity(await JWTService.GetClaims(user), "Base Authentication");
                 var principal = new ClaimsPrincipal(identity);
                 AuthStateService.SetAuthenticationState(Task.FromResult(new AuthenticationState(principal)));
                 AuthStateService.NotifyStateChanged();
+
+                NavigationManager.NavigateTo("/account/profile");
             }
             else
             {

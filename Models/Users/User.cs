@@ -18,5 +18,7 @@ namespace hephaestus.Models
 
         [InverseProperty("User")]
         public List<Invite> Invites {get; set;}
+
+        public GithubUser GithubUser {get; set;}
     }
 }

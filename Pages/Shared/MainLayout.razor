@@ -8,9 +8,6 @@
 @inject UserManager<User> UserManager
 @inject AuthStateService AuthStateService
 
-<div class="sidebar">
-</div>
-
 <div class="main">
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="navbar-brand">Hephaestus</div>
@@ -26,7 +23,7 @@
             <AuthorizeView>
                 <Authorized>
                     <li class="nav-item">
-                        <a class="nav-link" href="/">Welcome,  @context.User.Identity.Name!<span class="sr-only">(current)</span></a>
+                        <a class="nav-link" href="/account/profile">Welcome,  @context.User.Identity.Name!<span class="sr-only">(current)</span></a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/" @onclick="LogOut">Logout<span class="sr-only">(current)</span></a>
@@ -46,6 +43,7 @@
     </nav>
 
     <div class="content px-4">
+        <Toast />
         @Body
     </div>
 

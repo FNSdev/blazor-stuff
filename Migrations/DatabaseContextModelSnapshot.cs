@@ -123,6 +123,36 @@ namespace hephaestus.Migrations
                     b.ToTable("AspNetUserTokens");
                 });
 
+            modelBuilder.Entity("hephaestus.Models.GithubUser", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+
+                    b.Property<string>("AccessToken")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AvatarUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("HtmlUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Login")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("GithubUsers");
+                });
+
             modelBuilder.Entity("hephaestus.Models.Invite", b =>
                 {
                     b.Property<int>("Id")
@@ -358,6 +388,13 @@ namespace hephaestus.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("hephaestus.Models.GithubUser", b =>
+                {
+                    b.HasOne("hephaestus.Models.User", "User")
+                        .WithOne("GithubUser")
+                        .HasForeignKey("hephaestus.Models.GithubUser", "UserId");
                 });
 
             modelBuilder.Entity("hephaestus.Models.Invite", b =>

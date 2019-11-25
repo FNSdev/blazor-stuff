@@ -1,0 +1,258 @@
+@page "/account/profile"
+@attribute [Authorize]
+
+@using Microsoft.EntityFrameworkCore;
+@using hephaestus.Models;
+@using hephaestus.Services
+@using hephaestus.Forms.Account;
+@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
+@inject UserManager<User> UserManager
+@inject AuthStateService AuthStateService
+@inject GithubService GithubService
+@inject NavigationManager NavigationManager
+@inject ToastService ToastService
+@inject AuthStateService AuthStateService
+@inject IJWTService JWTService
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+@inject DatabaseContext DatabaseContext
+
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12 col-md-3 p-3" align="center">
+            <div class="card" style="width: 18rem;">
+                <div class="card-body">
+                    <h5 class="card-title">@userName</h5>
+                    <p class="card-text">@userEmail</p>
+                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#editUserModal">
+                        Edit
+                    </button>
+                    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#changePasswordModal">
+                        Change Password
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 p-3" align="center">
+            Main Part
+        </div>
+        <div class="col-12 col-md-3 p-3" align="center">
+            @if(githubToken != null)
+            {
+                <img src="@githubAvatarUrl">
+                <p>Your GitHub Token: @githubToken</p>
+                <p>Your GitHub Login: @githubLogin</p>
+            }
+            else
+            {
+                <a class="btn btn-primary" href=@githubOauthUrl>
+                    Get your GitHub Token
+                </a>
+            }
+            <p>@errorMessage</p>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editUserModal" tabindex="-1" role="dialog" aria-labelledby="editUserModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editUserModalTitle">Modal title</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="@editUserForm" OnValidSubmit="@HandleValidEditUserSubmit">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    <div class="form-group">
+                        <label for="username">UserName</label>
+                        <InputText class="form-control" id="inputUserName" placeholder="Enter UserName" @bind-Value="editUserForm.UserName" />
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <InputText class="form-control" id="inputEmail" placeholder="Enter Email" @bind-Value="editUserForm.Email" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </EditForm>
+            </div>
+            <div class="m-3">
+                @foreach (var error in editUserErrors)
+                {
+                    <span class="badge badge-danger">
+                        <p>@error.Description</p>
+                    </span>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="changePasswordModal" tabindex="-1" role="dialog" aria-labelledby="changePasswordModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changePasswordModalTitle">Modal title</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="@changePasswordForm" OnValidSubmit="@HandleValidChangePasswordSubmit">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    <div class="form-group">
+                        <label for="username">Old Password</label>
+                        <InputText type="password" class="form-control" id="inputOldPassword" placeholder="Enter your old password" @bind-Value="changePasswordForm.OldPassword" />
+                    </div>
+                    <div class="form-group">
+                        <label for="email">New Password</label>
+                        <InputText type="password" class="form-control" id="inputNewPassword" placeholder="Enter new password" @bind-Value="changePasswordForm.NewPassword" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </EditForm>
+            </div>
+            <div class="m-3">
+                @foreach (var error in changePasswordErrors)
+                {
+                    <span class="badge badge-danger">
+                        <p>@error.Description</p>
+                    </span>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code
+{
+    private User user;
+
+    private string githubToken;
+    private string githubOauthUrl;
+    private string errorMessage;
+    private string userName;
+    private string userEmail;
+    
+    private string githubAvatarUrl;
+    private string githubHtmlUrl;
+    private string githubLogin;
+
+    private EditUserForm editUserForm = new EditUserForm();
+    private ChangePasswordForm changePasswordForm = new ChangePasswordForm();
+    private List<IdentityError> editUserErrors = new List<IdentityError>();
+    private List<IdentityError> changePasswordErrors = new List<IdentityError>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateService.GetAuthenticationStateAsync();
+        user = DatabaseContext.Users
+                            .Include(u => u.GithubUser)
+                            .Where(u => u.UserName == authState.User.Identity.Name)
+                            .Select(u => u)
+                            .SingleOrDefault();
+        githubToken = user.GithubUser.AccessToken;
+        githubAvatarUrl = user.GithubUser.AvatarUrl;
+        githubLogin = user.GithubUser.Login;
+        githubHtmlUrl = user.GithubUser.HtmlUrl;
+
+        editUserForm.UserName = userName = user.UserName;
+        editUserForm.Email = userEmail = user.Email;
+
+        githubOauthUrl = GithubService.GetGithubOauthUrl();
+
+        var uriBuilder = new UriBuilder(NavigationManager.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uriBuilder.Query);
+        if(query["code"] != null)
+        {
+            await GetGithubToken(query["code"]);
+        }
+    }
+
+    private async Task GetGithubToken(string code)
+    {
+        var result = await GithubService.SetOauthToken(code, user);
+        if(result.ErrorMessage != null)
+        {
+            errorMessage = result.ErrorMessage;
+        }
+        else
+        {
+            githubToken = result.Response.access_token;
+            await GetGithubUserInfo(githubToken);
+        }
+        StateHasChanged();
+    }
+
+    private async Task GetGithubUserInfo(string token)
+    {
+        var setUserInfoResult = await GithubService.SetGithubUserInfo(user);
+        if(setUserInfoResult.ErrorMessage != null)
+        {
+            errorMessage = setUserInfoResult.ErrorMessage;
+        }
+        else 
+        {
+            githubAvatarUrl = setUserInfoResult.Response.avatar_url;
+            githubHtmlUrl = setUserInfoResult.Response.html_url;
+            githubLogin = setUserInfoResult.Response.login;
+        }
+    }
+
+    private async Task HandleValidEditUserSubmit()
+    {
+        user.UserName = editUserForm.UserName;
+        user.Email = editUserForm.Email;
+
+        var result = await UserManager.UpdateAsync(user);
+
+        if (result.Succeeded)
+        {
+            ToastService.ShowToast("Your profile was updated!", ToastLevel.Success);
+            userName = user.UserName;
+            userEmail = user.Email;
+
+            var token = await JWTService.GenerateJSONWebToken(user);
+            await localStorage.SetItemAsync("token", token);
+            
+            var identity = new ClaimsIdentity(await JWTService.GetClaims(user), "Base Authentication");
+            var principal = new ClaimsPrincipal(identity);
+            AuthStateService.SetAuthenticationState(Task.FromResult(new AuthenticationState(principal)));
+            AuthStateService.NotifyStateChanged();
+        }
+        else
+        {
+            editUserErrors.Clear();
+            editUserErrors.AddRange(result.Errors);
+        }
+    }
+
+    private async Task HandleValidChangePasswordSubmit()
+    {
+        user.UserName = editUserForm.UserName;
+        user.Email = editUserForm.Email;
+
+        var result = await UserManager.ChangePasswordAsync(user, changePasswordForm.OldPassword, changePasswordForm.NewPassword);
+
+        if (result.Succeeded)
+        {
+            ToastService.ShowToast("Your password was updated!", ToastLevel.Success);
+            userName = user.UserName;
+            userEmail = user.Email;
+        }
+        else
+        {
+            changePasswordErrors.Clear();
+            changePasswordErrors.AddRange(result.Errors);
+        }
+    }
+}
