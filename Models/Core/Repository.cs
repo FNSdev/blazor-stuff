@@ -10,7 +10,14 @@ namespace hephaestus.Models
         [MaxLength(128), Required]
         public string Name {get; set;}
 
+        public string Description {get; set;}
+
+        public string HtmlUrl {get; set;}
+
         public string UserId {get; set;}
         public User Owner {get; set;}
+
+        public int? ProjectId {get; set;}
+        public Project Project {get; set;}
     }
 }

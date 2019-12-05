@@ -1,0 +1,189 @@
+@page "/projects"
+@attribute [Authorize]
+
+@using hephaestus.Models
+@using hephaestus.Services
+@using hephaestus.Forms.Core
+@using hephaestus.Components
+@inject AuthStateService AuthStateService
+@inject InviteService InviteService
+@inject ProjectService ProjectService
+@inject RepositoryService RepositoryService
+@inject ToastService ToastService
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12 col-md-3 p-3" align="center">
+            <h3>Your Invites</h3>
+            @if(invites == null) 
+            {
+                <p>Loading ...</p>
+            }
+            else
+            {
+                @foreach(var invite in invites)
+                {
+                    <div class="card" style="width: 26rem;">
+                        <div class="card-body">
+                            <h5 class="card-title">@invite.Project.Name</h5>
+                            <h6 class="card-title">@invite.Status</h6>
+                            <p class="card-text">@invite.Message</p>
+                            <button class="btn btn-success" @onclick="@(async e => await AcceptInvite(invite))">Accept</button>
+                            <button class="btn btn-danger" @onclick="@(async e => await DeclineInvite(invite))">Descline</button>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+        <div class="col-12 col-md-6 p-3" align="center">
+            <h3>Your Owned Projects</h3>
+            @if(ownedProjects == null) 
+            {
+                <p>Loading ...</p>
+            }
+            else
+            {
+                @foreach(var project in ownedProjects)
+                {
+                    <div class="card mt-3" style="width: 18rem;">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="/projects/@project.Id">@project.Name</a>
+                            </h5>
+                            <p class="card-text">@project.Repository.Name</p>
+                            <p class="card-text">@project.Repository.Description</p>
+                            <a href="@project.Repository.HtmlUrl">View on Github</a>
+                        </div>
+                    </div>
+                }
+            }
+            <button type="button" class="btn btn-primary mt-3" data-toggle="modal" data-target="#createProjectModal">
+                Create Project
+            </button>
+        </div>
+        <div class="col-12 col-md-3 p-3" align="center">
+            <h3>Your Contributed Projects</h3>
+            @if(contributedProjects == null) 
+            {
+                <p>Loading ...</p>
+            }
+            else
+            {
+                @foreach(var project in contributedProjects)
+                {
+                    <div class="card mt-3" style="width: 18rem;">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="/projects/@project.Id">@project.Name</a>
+                            </h5>
+                            <p class="card-text">@project.Repository.Name</p>
+                            <p class="card-text">@project.Repository.Description</p>
+                            <a href="@project.Repository.HtmlUrl">View on Github</a>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="createProjectModal" tabindex="-1" role="dialog" aria-labelledby="createProjectModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createProjectModalTitle">New Project</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                @if(repositories == null || repositories.Count == 0)
+                {
+                    <p>It seems like you haven`t added any repository yet.</p>
+                    <p>Please, add one at Repositories page and come back.</p>
+                }
+                else
+                {
+                    <EditForm Model="@createProjectForm" OnValidSubmit="@HandleValidCreateProjectSubmit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+                        <div class="form-group">
+                            <label for="name">Project`s Name</label>
+                            <InputText class="form-control" id="name" placeholder="Enter Project`s Name" @bind-Value="createProjectForm.Name" />
+                            <label for="repository">Repository: </label>
+                            <InputSelectNumber class="custom-select" id="repository" @bind-Value="createProjectForm.RepositoryId">
+                                @foreach (var repository in repositories)
+                                {
+                                    <option value="@repository.Id">@repository.Name</option>
+                                }
+                            </InputSelectNumber>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </EditForm>   
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code 
+{
+    private List<Project> ownedProjects;
+    private List<Project> contributedProjects = new List<Project>();
+    private List<Invite> invites;
+    private List<Repository> repositories = new List<Repository>();
+    private User user;
+
+    private CreateProjectForm createProjectForm = new CreateProjectForm();
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await AuthStateService.GetUserWithProjectsAndRepositories();
+        ownedProjects = user.OwnedProjects;
+        repositories = user.Repositories;
+        invites = user.Invites;
+        foreach(var userProject in user.ContributedProjects)
+        {
+            contributedProjects.Add(userProject.Project);
+        }
+    }
+
+    private async Task HandleValidCreateProjectSubmit()
+    {
+        var repository = await RepositoryService.FindRepository(createProjectForm.RepositoryId);
+        var project = new Project() {
+            Name = createProjectForm.Name,
+            Owner = user,
+            Repository = repository,
+        };
+
+        var success = await ProjectService.CreateProject(project);
+        if(success)
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task AcceptInvite(Invite invite)
+    {
+        var project = invite.Project;
+        var success = await InviteService.AcceptInvite(invite);
+        if(success)
+        {
+            contributedProjects.Add(project);
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeclineInvite(Invite invite)
+    {
+        var success = await InviteService.DeclineInvite(invite);
+        if(success)
+        {
+            StateHasChanged();
+        }
+    }
+}

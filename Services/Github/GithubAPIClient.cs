@@ -25,6 +25,8 @@ namespace hephaestus.Services
         private string baseOauthUrl = "https://github.com/login/oauth/access_token";
         private string baseAPIUrl = "https://api.github.com";
 
+        private int perPageLimit = 5;
+
         private class HttpResponse
         {
             public Stream Response {get; set;}
@@ -35,6 +37,13 @@ namespace hephaestus.Services
         {
             _config = config;
             _httpClient = httpClient;
+        }
+
+        private void AddHeaders(HttpRequestMessage request)
+        {
+            request.Headers.Add("Accept", "application/json");
+            request.Headers.Add("Authorization", $"token {token}");
+            request.Headers.Add("User-Agent", "Hephaestus App");
         }
 
         private async Task<HttpResponse> makeRequest(HttpRequestMessage request)
@@ -87,9 +96,7 @@ namespace hephaestus.Services
         public async Task<GetUserInfoResponse> GetUserInfo()
         {
             var request = new HttpRequestMessage(HttpMethod.Get, $"{baseAPIUrl}/user");
-            request.Headers.Add("Accept", "application/json");
-            request.Headers.Add("Authorization", $"token {token}");
-            request.Headers.Add("User-Agent", "Hephaestus App");
+            AddHeaders(request);
 
             var response = await makeRequest(request);
             if(response.ErrorMessage != null)
@@ -99,6 +106,21 @@ namespace hephaestus.Services
 
             var getUserInfoResponse = await JsonSerializer.DeserializeAsync<GetUserInfoResponse>(response.Response);
             return getUserInfoResponse;
+        }
+
+        public async Task<GetUserRepositoriesResponse[]> GetUserRepositories(int page = 1)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, $"{baseAPIUrl}/user/repos?page={page}&per_page={perPageLimit}&type=owner");
+            AddHeaders(request);
+
+            var response = await makeRequest(request);
+            if(response.ErrorMessage != null)
+            {
+                throw new GithubAPIClientException(response.ErrorMessage);
+            }
+
+            var getUserRepositoriesResponse = await JsonSerializer.DeserializeAsync<GetUserRepositoriesResponse[]>(response.Response);
+            return getUserRepositoriesResponse;
         }
     }
 }

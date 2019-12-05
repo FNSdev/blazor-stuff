@@ -11,6 +11,7 @@ namespace hephaestus.Models
         public DbSet<Invite> Invites {get; set;}
         public DbSet<Problem> Problems {get; set;}
         public DbSet<GithubUser> GithubUsers {get; set;}
+        public DbSet<UserProject> UserProjects {get; set;}
 
         public DatabaseContext(DbContextOptions<DatabaseContext> options)
             : base(options)

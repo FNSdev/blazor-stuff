@@ -1,0 +1,121 @@
+@page "/repositories"
+@attribute [Authorize]
+
+@using hephaestus.Models
+@using hephaestus.Services
+@inject AuthStateService AuthStateService
+@inject GithubService GithubService
+@inject RepositoryService RepositoryService
+@inject ProjectService ProjectService
+@inject ToastService ToastService
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12 col-md-3 p-3" align="center">
+            <h3>Added Repositories</h3>
+            @if(addedRepositories == null) 
+            {
+                <p>Loading ...</p>
+            }
+            else if(allRepositories.Count == 0)
+            {
+                <p>It seems like you haven`t added any repositories yet.</p>
+            }
+            else
+            {
+                @foreach(var repository in addedRepositories)
+                {
+                    <div class="card mt-3" style="width: 24rem;">
+                        <div class="card-body">
+                            <h5 class="card-title">@repository.Name</h5>
+                            <p class="card-text">@repository.Description</p>
+                            <a class="btn btn-primary" href="@repository.HtmlUrl">View on Github</a>
+                            <p>
+                                <button class="btn btn-danger mt-3" @onclick="@(async e => await DeleteRepository(repository))">Delete Repository</button>
+                            </p>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+        <div class="col-12 col-md-6 p-3" align="center">
+            <h3>All Repositories</h3>
+            @if(allRepositories == null) 
+            {
+                <p>Loading ...</p>
+            }
+            else if(allRepositories.Count == 0)
+            {
+                <p>It seems like you don`t have any repositories yet.</p>
+                <p>Please, create one and come back.</p>
+            }
+            else
+            {
+                @foreach(var repository in allRepositories)
+                {
+                    <div class="card mt-3" style="width: 24rem;">
+                        <div class="card-body">
+                            <h5 class="card-title">@repository.name</h5>
+                            <p class="card-text">@repository.description</p>
+                            <a class="btn btn-primary" href="@repository.html_url">View on Github</a>
+                            <p>
+                                <button class="btn btn-success mt-3" @onclick="@(async e => await AddRepository(repository))">Add Repository</button>
+                            </p>
+                        </div>
+                    </div>
+                }
+                <button class="btn btn-primary mt-3" @onclick="GetRepositories">Load more</button>
+            }
+        </div>
+    </div>
+</div>
+
+@code
+{
+    private User user;
+    private List<Repository> addedRepositories;
+    private List<GetUserRepositoriesResponse> allRepositories = new List<GetUserRepositoriesResponse>();
+    private int page = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await AuthStateService.GetUserWithRepositories();
+        addedRepositories = user.Repositories;
+        await GetRepositories();
+    }
+
+    private async Task GetRepositories()
+    {
+        var result = await GithubService.GetUserRepositories(user, page);
+        if(result.ErrorMessage == null)
+        {
+            foreach (var githubRepository in result.Response)
+            {
+                allRepositories.Add(githubRepository);
+            }
+            page += 1;
+        }
+        else 
+        {
+            Console.WriteLine(result.ErrorMessage);
+        }
+    }
+
+    private async Task AddRepository(GetUserRepositoriesResponse githubRepository)
+    {
+        var success = await RepositoryService.CreateRepository(user, githubRepository.id, githubRepository.name, githubRepository.description, githubRepository.html_url);
+        if(success)
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteRepository(Repository repository)
+    {
+        var success = await RepositoryService.DeleteRepository(repository);
+        if(success)
+        {
+            StateHasChanged();
+        }
+    }
+}

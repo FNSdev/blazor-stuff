@@ -8,7 +8,6 @@
 @using Microsoft.AspNetCore.Identity
 @using System.Security.Claims
 @inject UserManager<User> UserManager
-@inject AuthStateService AuthStateService
 @inject GithubService GithubService
 @inject NavigationManager NavigationManager
 @inject ToastService ToastService
@@ -154,12 +153,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthStateService.GetAuthenticationStateAsync();
-        user = DatabaseContext.Users
-                            .Include(u => u.GithubUser)
-                            .Where(u => u.UserName == authState.User.Identity.Name)
-                            .Select(u => u)
-                            .SingleOrDefault();
+        user = await AuthStateService.GetUser();
         githubToken = user.GithubUser.AccessToken;
         githubAvatarUrl = user.GithubUser.AvatarUrl;
         githubLogin = user.GithubUser.Login;

@@ -1,0 +1,201 @@
+@page "/projects/{Id:int}"
+@attribute [Authorize]
+
+@using Microsoft.AspNetCore.Identity
+@using hephaestus.Models
+@using hephaestus.Services
+@using hephaestus.Forms.Core
+@inject AuthStateService AuthStateService
+@inject InviteService InviteService
+@inject ProjectService ProjectService
+@inject ToastService ToastService
+@inject UserManager<User> UserManager
+
+
+@if(errorMessage != null)
+{
+    <h1>@errorMessage</h1>
+}
+else
+{
+    @if(project == null)
+    {
+        <p>Loading ...</p>
+    }
+    else
+    {
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12 col-md-3 p-3" align="center">
+                    <div class="card mt-3" style="width: 26rem;">
+                        <div class="card-body">
+                            <h5 class="card-title">@project.Name</h5>
+                            <p class="card-text">@project.Repository.Name</p>
+                            <p class="card-text">@project.Repository.Description</p>
+                            <a href="@project.Repository.HtmlUrl">View on Github</a>
+                        </div>
+                    </div>                
+                    <p>
+                        <button style="width: 10rem;" type="button" class="btn btn-primary mt-3" data-toggle="modal" data-target="#contributorsModal">
+                            Contributors
+                        </button>
+                        <button style="width: 10rem;" type="button" class="btn btn-primary mt-3" data-toggle="modal" data-target="#invitesModal">
+                            Invites
+                        </button>
+                    </p>
+                </div>
+                <div class="col-12 col-md-6 p-3" align="center">
+                </div>
+                <div class="col-12 col-md-3 p-3" align="center">
+                </div>
+            </div>
+        </div>
+    }
+}
+
+
+<div class="modal fade" id="invitesModal" tabindex="-1" role="dialog" aria-labelledby="invitesModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="invitesModalTitle">Invites</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                @if(invites == null)
+                {
+                    <p>Loading ... </p>
+                }
+                else
+                {
+                    @foreach(var invite in invites)
+                    {
+                        <div class="card mt-3" style="width: 18rem;">
+                            <div class="card-body">
+                                <h5 class="card-title">@invite.User.UserName</h5>
+                                <h6 class="card-title">@invite.Status</h6>
+                                <p class="card-text">@invite.Message</p>
+                                <button class="btn btn-danger" @onclick="@(async e => await CancelInvite(invite))">Cancel</button>
+                            </div>
+                        </div> 
+                    }
+                }
+
+                <EditForm Model="@createInviteForm" OnValidSubmit="@HandleValidCreateInviteSubmit">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    <div class="form-group">
+                        <label for="username">UserName</label>
+                        <InputText class="form-control" id="username" placeholder="Enter UserName" @bind-Value="createInviteForm.UserName" />
+                        <label for="message">Message for User</label>
+                        <InputText class="form-control" id="message" placeholder="Enter Message" @bind-Value="createInviteForm.Message" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send Invite</button>
+                </EditForm>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="contributorsModal" tabindex="-1" role="dialog" aria-labelledby="contributorsModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="contributorsModalTitle">Contributors</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                @if(invites == null)
+                {
+                    <p>Loading ... </p>
+                }
+                else
+                {
+                    foreach (var contributor in contributors)
+                    {
+                        <div class="card mt-3" style="width: 18rem;">
+                            <div class="card-body">
+                                <h5 class="card-title">@contributor.Contributor.UserName</h5>
+                                <h6 class="card-title">@contributor.Contributor.Email</h6>
+                                <button class="btn btn-danger" @onclick="@(async e => await RemoveContributor(contributor))">Cancel</button>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code
+{
+    [Parameter]
+    public int Id { get; set; }
+    private string errorMessage = null;
+
+    private Project project;
+    private User user;
+    private List<Invite> invites;
+    private List<UserProject> contributors;
+    private bool isOwner;
+    
+    private CreateInviteForm createInviteForm = new CreateInviteForm();
+
+    protected override async Task OnInitializedAsync()
+    {
+        project = await ProjectService.FindById(Id);
+        if(project == null)
+        {
+            errorMessage = "Project does not exist";
+            return;
+        }
+
+        user = await AuthStateService.GetUser();
+        if(project.Owner.Id != user.Id && !(await ProjectService.IsContributor(project, user)))
+        {
+            errorMessage = "Access denied";
+            return;
+        }
+
+        if (project.Owner.Id == user.Id)
+        {
+            isOwner = true;
+        }
+
+        invites = project.Invites;
+        contributors = project.Contributors;
+    }
+
+    private async Task HandleValidCreateInviteSubmit()
+    {
+        var success = await InviteService.CreateInvite(project, createInviteForm.UserName, createInviteForm.Message);
+        if(success)
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task CancelInvite(Invite invite)
+    {
+        await InviteService.DeleteInvite(invite);
+        StateHasChanged();
+    }
+
+    private async Task RemoveContributor(UserProject contributor)
+    {
+        await ProjectService.DeleteContributor(contributor);
+        StateHasChanged();
+    }
+}

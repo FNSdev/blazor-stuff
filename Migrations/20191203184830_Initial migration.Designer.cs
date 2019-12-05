@@ -10,8 +10,8 @@ using hephaestus.Models;
 namespace hephaestus.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20191121193029_Initial")]
-    partial class Initial
+    [Migration("20191203184830_Initial migration")]
+    partial class Initialmigration
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -168,6 +168,9 @@ namespace hephaestus.Migrations
                     b.Property<int>("ProjectId")
                         .HasColumnType("integer");
 
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
                     b.Property<string>("UserId")
                         .HasColumnType("text");
 
@@ -221,15 +224,27 @@ namespace hephaestus.Migrations
                         .HasColumnType("integer")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("HtmlUrl")
+                        .HasColumnType("text");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("character varying(128)")
                         .HasMaxLength(128);
 
+                    b.Property<int?>("ProjectId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("UserId")
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ProjectId")
+                        .IsUnique();
 
                     b.HasIndex("UserId");
 
@@ -338,7 +353,7 @@ namespace hephaestus.Migrations
 
                     b.HasIndex("ProjectId");
 
-                    b.ToTable("UserProject");
+                    b.ToTable("UserProjects");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -421,6 +436,10 @@ namespace hephaestus.Migrations
 
             modelBuilder.Entity("hephaestus.Models.Repository", b =>
                 {
+                    b.HasOne("hephaestus.Models.Project", "Project")
+                        .WithOne("Repository")
+                        .HasForeignKey("hephaestus.Models.Repository", "ProjectId");
+
                     b.HasOne("hephaestus.Models.User", "Owner")
                         .WithMany("Repositories")
                         .HasForeignKey("UserId");

@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace hephaestus.Migrations
 {
-    public partial class Initial : Migration
+    public partial class Initialmigration : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -209,26 +209,6 @@ namespace hephaestus.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Repositories",
-                columns: table => new
-                {
-                    Id = table.Column<int>(nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(maxLength: 128, nullable: false),
-                    UserId = table.Column<string>(nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Repositories", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Repositories_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Invites",
                 columns: table => new
                 {
@@ -236,7 +216,8 @@ namespace hephaestus.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Message = table.Column<string>(nullable: true),
                     UserId = table.Column<string>(nullable: true),
-                    ProjectId = table.Column<int>(nullable: false)
+                    ProjectId = table.Column<int>(nullable: false),
+                    Status = table.Column<int>(nullable: false)
                 },
                 constraints: table =>
                 {
@@ -256,7 +237,36 @@ namespace hephaestus.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "UserProject",
+                name: "Repositories",
+                columns: table => new
+                {
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(maxLength: 128, nullable: false),
+                    Description = table.Column<string>(nullable: true),
+                    HtmlUrl = table.Column<string>(nullable: true),
+                    UserId = table.Column<string>(nullable: true),
+                    ProjectId = table.Column<int>(nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Repositories", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Repositories_Projects_ProjectId",
+                        column: x => x.ProjectId,
+                        principalTable: "Projects",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Repositories_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserProjects",
                 columns: table => new
                 {
                     ContributorId = table.Column<string>(nullable: false),
@@ -264,15 +274,15 @@ namespace hephaestus.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_UserProject", x => new { x.ContributorId, x.ProjectId });
+                    table.PrimaryKey("PK_UserProjects", x => new { x.ContributorId, x.ProjectId });
                     table.ForeignKey(
-                        name: "FK_UserProject_AspNetUsers_ContributorId",
+                        name: "FK_UserProjects_AspNetUsers_ContributorId",
                         column: x => x.ContributorId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_UserProject_Projects_ProjectId",
+                        name: "FK_UserProjects_Projects_ProjectId",
                         column: x => x.ProjectId,
                         principalTable: "Projects",
                         principalColumn: "Id",
@@ -338,13 +348,19 @@ namespace hephaestus.Migrations
                 column: "OwnerId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Repositories_ProjectId",
+                table: "Repositories",
+                column: "ProjectId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Repositories_UserId",
                 table: "Repositories",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserProject_ProjectId",
-                table: "UserProject",
+                name: "IX_UserProjects_ProjectId",
+                table: "UserProjects",
                 column: "ProjectId");
         }
 
@@ -378,7 +394,7 @@ namespace hephaestus.Migrations
                 name: "Repositories");
 
             migrationBuilder.DropTable(
-                name: "UserProject");
+                name: "UserProjects");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");

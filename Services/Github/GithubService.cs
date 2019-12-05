@@ -59,6 +59,20 @@ namespace hephaestus.Services
             {
                 return new GetUserInfoResult() {Response = null, ErrorMessage = exception.Message};
             }
+        }
+
+        public async Task<GetUserRepositoriesResult> GetUserRepositories(User user, int page = 1)
+        {
+            try
+            {
+                _apiClient.token = user.GithubUser.AccessToken;
+                var response = await _apiClient.GetUserRepositories(page);
+                return new GetUserRepositoriesResult() {Response = response, ErrorMessage = null};
+            }
+            catch (GithubAPIClientException exception)
+            {
+                return new GetUserRepositoriesResult() {Response = null, ErrorMessage = exception.Message};
+            }
         } 
     }
 }

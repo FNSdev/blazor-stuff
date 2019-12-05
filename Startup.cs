@@ -80,14 +80,21 @@ namespace hephaestus
                 };
             });
 
-            
+            services.AddControllers();
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.AddBlazoredLocalStorage();
 
+            services.AddHostedService<QueuedHostedService>();
+            services.AddSingleton<IBackgroundTaskQueue, BackgroundTaskQueue>();
+
             services.AddScoped<HttpClient>();
             services.AddScoped<GithubAPIClient>();
             services.AddScoped<GithubService>();
+            services.AddScoped<RepositoryService>();
+            services.AddScoped<ProjectService>();
+            services.AddScoped<InviteService>();
+            services.AddSingleton<MailingService>();
 
             services.AddScoped<ToastService>();
 
@@ -123,6 +130,7 @@ namespace hephaestus
             {
                 endpoints.MapBlazorHub();
                 endpoints.MapFallbackToPage("/_Host");
+                endpoints.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
             });
         }
 

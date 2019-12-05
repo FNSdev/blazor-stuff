@@ -13,8 +13,8 @@ using hephaestus.Models;
 
 public interface IJWTService
 {
-    public Task<string> GenerateJSONWebToken(User user);
-    public Task<List<Claim>> GetClaims(User user);
+    Task<string> GenerateJSONWebToken(User user);
+    Task<List<Claim>> GetClaims(User user);
 }
 
 
