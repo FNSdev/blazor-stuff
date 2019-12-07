@@ -10,6 +10,7 @@
 @inject ProjectService ProjectService
 @inject ToastService ToastService
 @inject UserManager<User> UserManager
+@inject TicketService TicketService
 
 
 @if(errorMessage != null)
@@ -45,6 +46,31 @@ else
                     </p>
                 </div>
                 <div class="col-12 col-md-6 p-3" align="center">
+                    @foreach (var ticket in tickets)
+                    {
+                        <div class="card mt-3" style="width: 24rem;">
+                            <div class="card-body">
+                                <h5 class="card-title">@ticket.Name</h5>
+                                <h6 class="card-text">@ticket.Status</h6>
+                                <p class="card-text">@ticket.Description</p>
+                                @if (ticket.Assignees != null)
+                                {
+                                    @foreach (var assignee in ticket.Assignees)
+                                    {
+                                        <p><span style="font-size: 24px; width: 12rem" class="badge badge-info">@assignee.Assignee.UserName</span></p>
+                                    }
+                                }
+                                <p>
+                                    <button type="button" class="btn btn-primary mt-3" data-toggle="modal" data-target="#assignUserModal" @onclick="@(async e => await SelectTicket(ticket))">
+                                        Assign New User
+                                    </button>
+                                 </p>
+                            </div>
+                        </div>  
+                    }
+                <button style="width: 20rem;" type="button" class="btn btn-warning mt-3" data-toggle="modal" data-target="#createTicketModal">
+                    Create Ticket
+                </button>
                 </div>
                 <div class="col-12 col-md-3 p-3" align="center">
                 </div>
@@ -113,7 +139,7 @@ else
                 </button>
             </div>
             <div class="modal-body">
-                @if(invites == null)
+                @if(contributors== null)
                 {
                     <p>Loading ... </p>
                 }
@@ -139,6 +165,72 @@ else
 </div>
 
 
+<div class="modal fade" id="createTicketModal" tabindex="-1" role="dialog" aria-labelledby="createTicketModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createTicketModalTitle">New Ticket</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <EditForm Model="@createTicketForm" OnValidSubmit="@HandleValidCreateTicketSubmit">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    <div class="form-group">
+                        <label for="name">Ticket`s Name</label>
+                        <InputText class="form-control" id="name" placeholder="Enter Tickets`s Name" @bind-Value="createTicketForm.Name" />
+                        <label for="description">Ticket`s Description</label>
+                        <InputText class="form-control" id="description" placeholder="Enter Ticket`s Description" @bind-Value="createTicketForm.Description" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </EditForm>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="assignUserModal" tabindex="-1" role="dialog" aria-labelledby="assignUserModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignUserModalTitle">Assign User</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                @if(contributors== null)
+                {
+                    <p>Loading ... </p>
+                }
+                else
+                {
+                    foreach (var contributor in contributors)
+                    {
+                        <div class="card mt-3" style="width: 18rem;">
+                            <div class="card-body">
+                                <h5 class="card-title">@contributor.Contributor.UserName</h5>
+                                <h6 class="card-title">@contributor.Contributor.Email</h6>
+                                <button class="btn btn-danger" @onclick="@(async e => await AssignUserToTicket(selectedTicket, contributor.Contributor))">Assign</button>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 @code
 {
     [Parameter]
@@ -149,10 +241,14 @@ else
     private User user;
     private List<Invite> invites;
     private List<UserProject> contributors;
+    private List<Ticket> tickets;
     private bool isOwner;
     
     private CreateInviteForm createInviteForm = new CreateInviteForm();
+    private CreateTicketForm createTicketForm = new CreateTicketForm();
 
+    private Ticket selectedTicket;
+    
     protected override async Task OnInitializedAsync()
     {
         project = await ProjectService.FindById(Id);
@@ -176,6 +272,7 @@ else
 
         invites = project.Invites;
         contributors = project.Contributors;
+        tickets = project.Tickets;
     }
 
     private async Task HandleValidCreateInviteSubmit()
@@ -197,5 +294,28 @@ else
     {
         await ProjectService.DeleteContributor(contributor);
         StateHasChanged();
+    }
+
+    private async Task HandleValidCreateTicketSubmit()
+    {
+        var success = await TicketService.CreateTicket(project, createTicketForm.Name, createTicketForm.Description);
+        if (success)
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task AssignUserToTicket(Ticket ticket, User user)
+    {
+        var success = await TicketService.AssignUser(ticket, user);
+        if (success)
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async Task SelectTicket(Ticket ticket)
+    {
+        selectedTicket = ticket;
     }
 }

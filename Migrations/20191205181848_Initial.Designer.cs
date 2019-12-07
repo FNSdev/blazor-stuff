@@ -10,8 +10,8 @@ using hephaestus.Models;
 namespace hephaestus.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20191203184830_Initial migration")]
-    partial class Initialmigration
+    [Migration("20191205181848_Initial")]
+    partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -183,18 +183,6 @@ namespace hephaestus.Migrations
                     b.ToTable("Invites");
                 });
 
-            modelBuilder.Entity("hephaestus.Models.Problem", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Problems");
-                });
-
             modelBuilder.Entity("hephaestus.Models.Project", b =>
                 {
                     b.Property<int>("Id")
@@ -277,6 +265,35 @@ namespace hephaestus.Migrations
                     b.ToTable("AspNetRoles");
                 });
 
+            modelBuilder.Entity("hephaestus.Models.Ticket", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("character varying(128)")
+                        .HasMaxLength(128);
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("Tickets");
+                });
+
             modelBuilder.Entity("hephaestus.Models.User", b =>
                 {
                     b.Property<string>("Id")
@@ -354,6 +371,21 @@ namespace hephaestus.Migrations
                     b.HasIndex("ProjectId");
 
                     b.ToTable("UserProjects");
+                });
+
+            modelBuilder.Entity("hephaestus.Models.UserTicket", b =>
+                {
+                    b.Property<string>("AssigneeId")
+                        .HasColumnType("text");
+
+                    b.Property<int>("TicketId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("AssigneeId", "TicketId");
+
+                    b.HasIndex("TicketId");
+
+                    b.ToTable("UserTickets");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -445,6 +477,15 @@ namespace hephaestus.Migrations
                         .HasForeignKey("UserId");
                 });
 
+            modelBuilder.Entity("hephaestus.Models.Ticket", b =>
+                {
+                    b.HasOne("hephaestus.Models.Project", "Project")
+                        .WithMany("Tickets")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("hephaestus.Models.UserProject", b =>
                 {
                     b.HasOne("hephaestus.Models.User", "Contributor")
@@ -456,6 +497,21 @@ namespace hephaestus.Migrations
                     b.HasOne("hephaestus.Models.Project", "Project")
                         .WithMany("Contributors")
                         .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("hephaestus.Models.UserTicket", b =>
+                {
+                    b.HasOne("hephaestus.Models.User", "Assignee")
+                        .WithMany("Tickets")
+                        .HasForeignKey("AssigneeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("hephaestus.Models.Ticket", "Ticket")
+                        .WithMany("Assignees")
+                        .HasForeignKey("TicketId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

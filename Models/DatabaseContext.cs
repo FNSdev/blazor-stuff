@@ -6,12 +6,14 @@ namespace hephaestus.Models
 {
     public class DatabaseContext : IdentityDbContext<User, Role, string>
     {
-        public DbSet<Project> Projects {get; set;}
-        public DbSet<Repository> Repositories {get; set;}
-        public DbSet<Invite> Invites {get; set;}
-        public DbSet<Problem> Problems {get; set;}
-        public DbSet<GithubUser> GithubUsers {get; set;}
-        public DbSet<UserProject> UserProjects {get; set;}
+        public DbSet<Project> Projects { get; set; }
+        public DbSet<Repository> Repositories { get; set; }
+        public DbSet<Invite> Invites {get; set; }
+        public DbSet<Ticket> Tickets { get; set; }
+
+        public DbSet<UserTicket> UserTickets { get; set; }
+        public DbSet<GithubUser> GithubUsers { get; set; }
+        public DbSet<UserProject> UserProjects { get; set; }
 
         public DatabaseContext(DbContextOptions<DatabaseContext> options)
             : base(options)
@@ -33,6 +35,19 @@ namespace hephaestus.Models
                 .HasOne(userProject => userProject.Project)
                 .WithMany(project => project.Contributors)
                 .HasForeignKey(userProject => userProject.ProjectId);
+            
+            modelBuilder.Entity<UserTicket>()
+                .HasKey(userTicket => new {userTicket.AssigneeId, userTicket.TicketId });
+
+            modelBuilder.Entity<UserTicket>()
+                .HasOne(userTicket => userTicket.Assignee)
+                .WithMany(assignee => assignee.Tickets)
+                .HasForeignKey(userTicket => userTicket.AssigneeId);
+
+            modelBuilder.Entity<UserTicket>()
+                .HasOne(userTicket => userTicket.Ticket)
+                .WithMany(ticket => ticket.Assignees)
+                .HasForeignKey(userTicket => userTicket.TicketId);
         } 
     }
 }

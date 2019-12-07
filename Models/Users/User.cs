@@ -20,5 +20,7 @@ namespace hephaestus.Models
         public List<Invite> Invites {get; set;}
 
         public GithubUser GithubUser {get; set;}
+        
+        public List<UserTicket> Tickets { get; set; }
     }
 }

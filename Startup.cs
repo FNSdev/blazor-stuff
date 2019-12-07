@@ -94,6 +94,7 @@ namespace hephaestus
             services.AddScoped<RepositoryService>();
             services.AddScoped<ProjectService>();
             services.AddScoped<InviteService>();
+            services.AddScoped<TicketService>();
             services.AddSingleton<MailingService>();
 
             services.AddScoped<ToastService>();

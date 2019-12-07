@@ -21,5 +21,8 @@ namespace hephaestus.Models
         public List<Invite> Invites {get; set;}
                 
         public Repository Repository {get; set;}
+        
+        [InverseProperty("Project")]
+        public List<Ticket> Tickets { get; set; }
     }
 }

@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace hephaestus.Migrations
 {
-    public partial class Initialmigration : Migration
+    public partial class Initial : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -45,18 +45,6 @@ namespace hephaestus.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AspNetUsers", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Problems",
-                columns: table => new
-                {
-                    Id = table.Column<int>(nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Problems", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -266,6 +254,28 @@ namespace hephaestus.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Tickets",
+                columns: table => new
+                {
+                    Id = table.Column<int>(nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(maxLength: 128, nullable: false),
+                    Description = table.Column<string>(nullable: false),
+                    Status = table.Column<int>(nullable: false),
+                    ProjectId = table.Column<int>(nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Tickets", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Tickets_Projects_ProjectId",
+                        column: x => x.ProjectId,
+                        principalTable: "Projects",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "UserProjects",
                 columns: table => new
                 {
@@ -285,6 +295,30 @@ namespace hephaestus.Migrations
                         name: "FK_UserProjects_Projects_ProjectId",
                         column: x => x.ProjectId,
                         principalTable: "Projects",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserTickets",
+                columns: table => new
+                {
+                    AssigneeId = table.Column<string>(nullable: false),
+                    TicketId = table.Column<int>(nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserTickets", x => new { x.AssigneeId, x.TicketId });
+                    table.ForeignKey(
+                        name: "FK_UserTickets_AspNetUsers_AssigneeId",
+                        column: x => x.AssigneeId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_UserTickets_Tickets_TicketId",
+                        column: x => x.TicketId,
+                        principalTable: "Tickets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -359,9 +393,19 @@ namespace hephaestus.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Tickets_ProjectId",
+                table: "Tickets",
+                column: "ProjectId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_UserProjects_ProjectId",
                 table: "UserProjects",
                 column: "ProjectId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserTickets_TicketId",
+                table: "UserTickets",
+                column: "TicketId");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
@@ -388,16 +432,19 @@ namespace hephaestus.Migrations
                 name: "Invites");
 
             migrationBuilder.DropTable(
-                name: "Problems");
-
-            migrationBuilder.DropTable(
                 name: "Repositories");
 
             migrationBuilder.DropTable(
                 name: "UserProjects");
 
             migrationBuilder.DropTable(
+                name: "UserTickets");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoles");
+
+            migrationBuilder.DropTable(
+                name: "Tickets");
 
             migrationBuilder.DropTable(
                 name: "Projects");

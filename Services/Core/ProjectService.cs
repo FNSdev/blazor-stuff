@@ -51,6 +51,9 @@ namespace hephaestus.Services
                 .ThenInclude(invite => invite.User)
                 .Include(p => p.Contributors)
                 .ThenInclude(contributor => contributor.Contributor)
+                .Include(p => p.Tickets)
+                .ThenInclude(ticket => ticket.Assignees)
+                .ThenInclude(assignee => assignee.Assignee)
                 .Where(p => p.Id == id)
                 .Select(p => p)
                 .SingleOrDefaultAsync();
@@ -59,6 +62,11 @@ namespace hephaestus.Services
         public async Task DeleteContributor(UserProject userProject)
         {
             _databaseContext.Remove(userProject);
+            _databaseContext.UserTickets
+                .RemoveRange(await _databaseContext.UserTickets
+                    .Where(ut =>
+                        ut.AssigneeId == userProject.ContributorId && ut.Ticket.ProjectId == userProject.ProjectId)
+                    .Select(ut => ut).ToListAsync());
             await _databaseContext.SaveChangesAsync();
         }
 
