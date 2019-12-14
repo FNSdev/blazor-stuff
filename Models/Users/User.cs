@@ -22,5 +22,8 @@ namespace hephaestus.Models
         public GithubUser GithubUser {get; set;}
         
         public List<UserTicket> Tickets { get; set; }
+        
+        [InverseProperty("User")]
+        public List<Comment> Comments { get; set; }
     }
 }

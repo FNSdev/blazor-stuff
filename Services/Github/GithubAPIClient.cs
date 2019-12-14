@@ -6,6 +6,8 @@ using System;
 using System.Net;
 using System.Text.Json;
 using System.IO;
+using hephaestus.Models;
+using hephaestus.Services.RequestContents;
 
 
 namespace hephaestus.Services
@@ -110,7 +112,39 @@ namespace hephaestus.Services
 
         public async Task<GetUserRepositoriesResponse[]> GetUserRepositories(int page = 1)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, $"{baseAPIUrl}/user/repos?page={page}&per_page={perPageLimit}&type=owner");
+            var request = new HttpRequestMessage(HttpMethod.Get,
+                $"{baseAPIUrl}/user/repos?page={page}&per_page={perPageLimit}&type=owner");
+            AddHeaders(request);
+
+            var response = await makeRequest(request);
+            if (response.ErrorMessage != null)
+            {
+                throw new GithubAPIClientException(response.ErrorMessage);
+            }
+
+            var getUserRepositoriesResponse =
+                await JsonSerializer.DeserializeAsync<GetUserRepositoriesResponse[]>(response.Response);
+            return getUserRepositoriesResponse;
+        }
+
+        public async Task<CreateWebhookResponse> CreateWebhook(string owner, string repoName)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Post, 
+                $"{baseAPIUrl}/repos/{owner}/{repoName}/hooks");
+            var content = new CreateWebhookRequestContent
+            {
+                config = new CreateWebhookRequestContent.Config
+                {
+                    url="https://023ffcff.ngrok.io/"
+                },
+                events = new [] {"create", "push", "delete"},
+            };
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true
+            };
+            var rawContent = new StringContent(JsonSerializer.Serialize(content, options));
+            request.Content = rawContent;
             AddHeaders(request);
 
             var response = await makeRequest(request);
@@ -118,9 +152,8 @@ namespace hephaestus.Services
             {
                 throw new GithubAPIClientException(response.ErrorMessage);
             }
-
-            var getUserRepositoriesResponse = await JsonSerializer.DeserializeAsync<GetUserRepositoriesResponse[]>(response.Response);
-            return getUserRepositoriesResponse;
+            var createWebhookResponse = await JsonSerializer.DeserializeAsync<CreateWebhookResponse>(response.Response);       
+            return createWebhookResponse;      
         }
     }
 }

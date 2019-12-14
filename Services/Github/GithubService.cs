@@ -73,6 +73,20 @@ namespace hephaestus.Services
             {
                 return new GetUserRepositoriesResult() {Response = null, ErrorMessage = exception.Message};
             }
-        } 
+        }
+
+        public async Task<CreateWebhookResult> CreateWebhook(Project project)
+        {
+            try
+            {
+                _apiClient.token = project.Owner.GithubUser.AccessToken;
+                var response = await _apiClient.CreateWebhook(project.Owner.GithubUser.Login, project.Repository.Name);
+                return new CreateWebhookResult() {Response = response, ErrorMessage = null};
+            }
+            catch (GithubAPIClientException exception)
+            {
+                return new CreateWebhookResult() {Response = null, ErrorMessage = exception.Message};
+            }
+        }
     }
 }

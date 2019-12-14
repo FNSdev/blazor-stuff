@@ -14,7 +14,10 @@ namespace hephaestus.Models
         public DbSet<UserTicket> UserTickets { get; set; }
         public DbSet<GithubUser> GithubUsers { get; set; }
         public DbSet<UserProject> UserProjects { get; set; }
+        public DbSet<Comment> Comments { get; set; }
 
+        public DbSet<Webhook> Webhooks { get; set; }
+        
         public DatabaseContext(DbContextOptions<DatabaseContext> options)
             : base(options)
         {

@@ -95,6 +95,7 @@ namespace hephaestus
             services.AddScoped<ProjectService>();
             services.AddScoped<InviteService>();
             services.AddScoped<TicketService>();
+            services.AddScoped<CommentService>();
             services.AddSingleton<MailingService>();
 
             services.AddScoped<ToastService>();
@@ -129,9 +130,9 @@ namespace hephaestus
 
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapControllerRoute("default", "{controller}/{action}/{id?}");
                 endpoints.MapBlazorHub();
-                endpoints.MapFallbackToPage("/_Host");
-                endpoints.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
+                // endpoints.MapFallbackToPage("/_Host");
             });
         }
 

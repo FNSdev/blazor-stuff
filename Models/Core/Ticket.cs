@@ -30,5 +30,8 @@ namespace hephaestus.Models
         public int ProjectId { get; set; }
         
         public Project Project { get; set; }
+        
+        [InverseProperty("Ticket")]
+        public List<Comment> Comments { get; set; }
     }
 }

@@ -10,11 +10,13 @@ namespace hephaestus.Services
     {
         private DatabaseContext _databaseContext;
         private ToastService _toastService;
+        private GithubService _githubService;
 
-        public ProjectService(DatabaseContext databaseContext, ToastService toastService)
+        public ProjectService(DatabaseContext databaseContext, ToastService toastService, GithubService githubService)
         {
             _databaseContext = databaseContext;
             _toastService = toastService;
+            _githubService = githubService;
         }
 
         public async Task<bool> CreateProject(Project project)
@@ -26,12 +28,18 @@ namespace hephaestus.Services
                 _toastService.ShowToast("You already own a project for this repository", ToastLevel.Error);
                 return false;
             }
-            else
+            
+            await _databaseContext.Projects.AddAsync(project);
+            await _databaseContext.SaveChangesAsync();
+
+            var result = await _githubService.CreateWebhook(project);
+            if (result.ErrorMessage == null)
             {
-                await _databaseContext.Projects.AddAsync(project);
-                await _databaseContext.SaveChangesAsync();
-                return true;            
+                return true;
             }
+            
+            _toastService.ShowToast(result.ErrorMessage, ToastLevel.Error);
+            return false;
         }
 
         public async Task<Project> FindByRepository(Repository repository)

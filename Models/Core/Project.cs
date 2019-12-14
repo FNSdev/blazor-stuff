@@ -24,5 +24,8 @@ namespace hephaestus.Models
         
         [InverseProperty("Project")]
         public List<Ticket> Tickets { get; set; }
+        
+        [InverseProperty("Project")]
+        public List<Webhook> Webhooks { get; set; }
     }
 }
