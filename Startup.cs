@@ -91,6 +91,7 @@ namespace hephaestus
             services.AddScoped<HttpClient>();
             services.AddScoped<GithubAPIClient>();
             services.AddScoped<GithubService>();
+            services.AddScoped<WebhookService>();
             services.AddScoped<RepositoryService>();
             services.AddScoped<ProjectService>();
             services.AddScoped<InviteService>();
@@ -132,7 +133,7 @@ namespace hephaestus
             {
                 endpoints.MapControllerRoute("default", "{controller}/{action}/{id?}");
                 endpoints.MapBlazorHub();
-                // endpoints.MapFallbackToPage("/_Host");
+                endpoints.MapFallbackToPage("/_Host");
             });
         }
 

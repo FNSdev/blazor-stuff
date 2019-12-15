@@ -25,8 +25,25 @@ namespace hephaestus.Services
             _mailingService = mailingService;
         }
 
-        public async Task<bool> CreateTicket(Project project, string name, string description)
+        public async Task<Ticket> FindTicket(Project project, string name)
         {
+            var ticket = await _databaseContext.Tickets
+                .Where(t => t.ProjectId == project.Id && t.Name == name)
+                .Select(t => t)
+                .SingleOrDefaultAsync();
+            
+            return ticket;
+        }
+
+        public async Task<Ticket> CreateTicket(Project project, string name, string description)
+        {
+            var existingTicket = await FindTicket(project, name);
+            if (existingTicket != null)
+            {
+                _toastService.ShowToast("Ticket with this name already exists", ToastLevel.Error);
+                return null;
+            }
+
             var ticket = new Ticket
             {
                 ProjectId = project.Id,
@@ -35,8 +52,8 @@ namespace hephaestus.Services
             };
             await _databaseContext.Tickets.AddAsync(ticket);
             await _databaseContext.SaveChangesAsync();
-            await AssignUser(ticket, project.Owner);
-            return true;
+            // await AssignUser(ticket, project.Owner);
+            return ticket;
         }
 
         public async Task<bool> UpdateTicket(Ticket ticket, string name, string description, Ticket.TicketStatus status)

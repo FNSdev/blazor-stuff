@@ -10,13 +10,13 @@ namespace hephaestus.Services
     {
         private DatabaseContext _databaseContext;
         private ToastService _toastService;
-        private GithubService _githubService;
+        private WebhookService _webhookService;
 
-        public ProjectService(DatabaseContext databaseContext, ToastService toastService, GithubService githubService)
+        public ProjectService(DatabaseContext databaseContext, ToastService toastService, WebhookService webhookService)
         {
             _databaseContext = databaseContext;
             _toastService = toastService;
-            _githubService = githubService;
+            _webhookService = webhookService;
         }
 
         public async Task<bool> CreateProject(Project project)
@@ -31,15 +31,9 @@ namespace hephaestus.Services
             
             await _databaseContext.Projects.AddAsync(project);
             await _databaseContext.SaveChangesAsync();
-
-            var result = await _githubService.CreateWebhook(project);
-            if (result.ErrorMessage == null)
-            {
-                return true;
-            }
+            await _webhookService.CreateWebhooks(project);
             
-            _toastService.ShowToast(result.ErrorMessage, ToastLevel.Error);
-            return false;
+            return true;
         }
 
         public async Task<Project> FindByRepository(Repository repository)

@@ -127,7 +127,7 @@ namespace hephaestus.Services
             return getUserRepositoriesResponse;
         }
 
-        public async Task<CreateWebhookResponse> CreateWebhook(string owner, string repoName)
+        public async Task<CreateWebhookResponse> CreateWebhook(string owner, string repoName, string action)
         {
             var request = new HttpRequestMessage(HttpMethod.Post, 
                 $"{baseAPIUrl}/repos/{owner}/{repoName}/hooks");
@@ -135,15 +135,11 @@ namespace hephaestus.Services
             {
                 config = new CreateWebhookRequestContent.Config
                 {
-                    url="https://023ffcff.ngrok.io/"
+                    url=$"{_config["Common:BaseUrl"]}/Webhook/{action}"
                 },
-                events = new [] {"create", "push", "delete"},
+                events = new [] {action.ToLower()},
             };
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = true
-            };
-            var rawContent = new StringContent(JsonSerializer.Serialize(content, options));
+            var rawContent = new StringContent(JsonSerializer.Serialize(content, null));
             request.Content = rawContent;
             AddHeaders(request);
 

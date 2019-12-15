@@ -115,17 +115,20 @@ else
                     }
                 }
 
-                <EditForm Model="@createInviteForm" OnValidSubmit="@HandleValidCreateInviteSubmit">
-                    <DataAnnotationsValidator />
-                    <ValidationSummary />
-                    <div class="form-group">
-                        <label for="username">UserName</label>
-                        <InputText class="form-control" id="username" placeholder="Enter UserName" @bind-Value="createInviteForm.UserName" />
-                        <label for="message">Message for User</label>
-                        <InputText class="form-control" id="message" placeholder="Enter Message" @bind-Value="createInviteForm.Message" />
-                    </div>
-                    <button type="submit" class="btn btn-primary">Send Invite</button>
-                </EditForm>
+                @if (isOwner)
+                {
+                    <EditForm Model="@createInviteForm" OnValidSubmit="@HandleValidCreateInviteSubmit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+                        <div class="form-group">
+                            <label for="username">UserName</label>
+                            <InputText class="form-control" id="username" placeholder="Enter UserName" @bind-Value="createInviteForm.UserName" />
+                            <label for="message">Message for User</label>
+                            <InputText class="form-control" id="message" placeholder="Enter Message" @bind-Value="createInviteForm.Message" />
+                        </div>
+                        <button type="submit" class="btn btn-primary">Send Invite</button>
+                    </EditForm>                    
+                }
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -157,7 +160,10 @@ else
                             <div class="card-body">
                                 <h5 class="card-title">@contributor.Contributor.UserName</h5>
                                 <h6 class="card-title">@contributor.Contributor.Email</h6>
-                                <button class="btn btn-danger" @onclick="@(async e => await RemoveContributor(contributor))">Cancel</button>
+                                @if (isOwner)
+                                {
+                                    <button class="btn btn-danger" @onclick="@(async e => await RemoveContributor(contributor))">Cancel</button>       
+                                }                          
                             </div>
                         </div>
                     }
@@ -267,25 +273,32 @@ else
                     <button type="submit" class="btn btn-primary">Save Changes</button>
                 </EditForm>
 
-
-
-                @if(contributors == null)
+                @if(comments == null)
                 {
                     <p>Loading ... </p>
                 }
                 else
                 {
-                    foreach (var contributor in contributors)
+                    foreach (var comment in comments)
                     {
                         <div class="card mt-3" style="width: 18rem;">
                             <div class="card-body">
-                                <h5 class="card-title">@contributor.Contributor.UserName</h5>
-                                <h6 class="card-title">@contributor.Contributor.Email</h6>
-                                <button class="btn btn-danger" @onclick="@(async e => await AssignUserToTicket(selectedTicket, contributor.Contributor))">Assign</button>
+                                <h5 class="card-title">@comment.User.UserName</h5>
+                                <h6 class="card-title">@comment.CreatedAt</h6>
+                                <p class="card-text">@comment.Message</p>
                             </div>
                         </div>
                     }
                 }
+                <EditForm Model="@createCommentForm" OnValidSubmit="@HandleValidCreateCommentSubmit">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    <div class="form-group mt-3">
+                        <label for="commentMessage">Message</label>
+                        <InputText class="form-control" id="commentMessage" placeholder="Enter Message" @bind-Value="createCommentForm.Message" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Comment</button>
+                </EditForm>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -312,6 +325,7 @@ else
     private CreateInviteForm createInviteForm = new CreateInviteForm();
     private CreateTicketForm createTicketForm = new CreateTicketForm();
     private EditTicketForm editTicketForm = new EditTicketForm();
+    private CreateCommentForm createCommentForm = new CreateCommentForm();
 
     private Ticket selectedTicket;
 
@@ -364,11 +378,8 @@ else
 
     private async Task HandleValidCreateTicketSubmit()
     {
-        var success = await TicketService.CreateTicket(project, createTicketForm.Name, createTicketForm.Description);
-        if (success)
-        {
-            StateHasChanged();
-        }
+        var ticket = await TicketService.CreateTicket(project, createTicketForm.Name, createTicketForm.Description);
+        StateHasChanged();
     }
 
     private async Task AssignUserToTicket(Ticket ticket, User user)
@@ -410,5 +421,12 @@ else
         {
             StateHasChanged();
         }
+    }
+
+    private async Task HandleValidCreateCommentSubmit()
+    {
+        var comment = await CommentService.CreateComment(selectedTicket, user, createCommentForm.Message);
+        comments.Add(comment);
+        StateHasChanged();
     }
 }

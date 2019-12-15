@@ -10,7 +10,6 @@ namespace hephaestus.Services
         private IConfiguration _config;
         private GithubAPIClient _apiClient;
         private DatabaseContext _databaseContext;
-        public string token {get; set;}
 
         public GithubService(IConfiguration config, GithubAPIClient apiClient, DatabaseContext databaseContext)
         {
@@ -20,6 +19,7 @@ namespace hephaestus.Services
         }
 
         public string GetGithubOauthUrl()
+        
         {
             var clientId = _config["Github:ClientId"];
             var clientSecret = _config["Github:ClientSecret"];
@@ -75,12 +75,12 @@ namespace hephaestus.Services
             }
         }
 
-        public async Task<CreateWebhookResult> CreateWebhook(Project project)
+        public async Task<CreateWebhookResult> CreateWebhook(Project project, string action)
         {
             try
             {
                 _apiClient.token = project.Owner.GithubUser.AccessToken;
-                var response = await _apiClient.CreateWebhook(project.Owner.GithubUser.Login, project.Repository.Name);
+                var response = await _apiClient.CreateWebhook(project.Owner.GithubUser.Login, project.Repository.Name, action);
                 return new CreateWebhookResult() {Response = response, ErrorMessage = null};
             }
             catch (GithubAPIClientException exception)
