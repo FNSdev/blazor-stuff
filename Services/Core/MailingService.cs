@@ -29,7 +29,7 @@ namespace hephaestus.Services
             {
                 var message = new MimeMessage()
                 {
-                    Sender = new MailboxAddress("Uladzislau Stasheuski", "hephaestus.noreply@gmail.com"),
+                    Sender = new MailboxAddress(_config["Gmail:UserName"], _config["Gmail:Email"]),
                     Subject = subject,
                 };
                 message.Body = new TextPart(TextFormat.Html) { Text = body};

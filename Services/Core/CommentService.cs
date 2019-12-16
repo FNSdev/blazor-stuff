@@ -37,7 +37,7 @@ namespace hephaestus.Services
             };
             await _databaseContext.Comments.AddAsync(comment);
             await _databaseContext.SaveChangesAsync();
-            await SendNotifications(message);
+            await SendNotifications(ticket, message);
             
             return comment;
         }
@@ -50,21 +50,26 @@ namespace hephaestus.Services
                 .ToListAsync();
         }
 
-        private async Task SendNotifications(string message)
+        private async Task SendNotifications(Ticket ticket, string message)
         {
+            var alreadySend = new List<string>();
             var regex = new Regex("(@[^ ,!.:?]+)");
             foreach (var match in regex.Matches(message))
             {
-                var user = await _databaseContext.Users
+                var user = await _databaseContext.UserProjects
+                    .Where(up => up.ProjectId == ticket.ProjectId)
+                    .Include(up => up.Contributor)
+                    .Select(up => up.Contributor)
                     .Where(u => u.UserName == ((Match) match).Value.Trim('@'))
-                    .Select(u => u)
                     .SingleOrDefaultAsync();
 
-                if (user == null)
+                if (user == null || alreadySend.Contains(user.UserName))
                 {
                     continue;
                 }
+                
                 _mailingService.Send(user.Email, "You were mentioned in a comment!", message);
+                alreadySend.Add(user.UserName);
             }
         }
     }
